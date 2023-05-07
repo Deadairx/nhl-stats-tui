@@ -29,7 +29,7 @@ pub struct Player {
     pub last_name: String,
 
     #[serde(rename = "Status")]
-    status: Status,
+    pub status: Status,
 
     #[serde(rename = "TeamID")]
     team_id: i64,
@@ -41,31 +41,31 @@ pub struct Player {
     pub position: Position,
 
     #[serde(rename = "Jersey")]
-    jersey: Option<i64>,
+    pub jersey: Option<i64>,
 
     #[serde(rename = "Catches")]
     catches: Option<Catches>,
 
     #[serde(rename = "Shoots")]
-    shoots: Option<Catches>,
+    pub shoots: Option<Catches>,
 
     #[serde(rename = "Height")]
-    height: i64,
+    pub height: i64,
 
     #[serde(rename = "Weight")]
-    weight: i64,
+    pub weight: i64,
 
     #[serde(rename = "BirthDate")]
-    birth_date: String,
+    pub birth_date: String,
 
     #[serde(rename = "BirthCity")]
-    birth_city: String,
+    pub birth_city: String,
 
     #[serde(rename = "BirthState")]
-    birth_state: Option<String>,
+    pub birth_state: Option<String>,
 
     #[serde(rename = "PhotoUrl")]
-    photo_url: String,
+    pub photo_url: String,
 
     #[serde(rename = "SportRadarPlayerID")]
     sport_radar_player_id: String,

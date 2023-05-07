@@ -2,8 +2,8 @@ use std::{env, io, error::Error, time::Duration};
 use crossterm::{terminal::{enable_raw_mode, EnterAlternateScreen, disable_raw_mode, LeaveAlternateScreen}, execute, event::{EnableMouseCapture, DisableMouseCapture, poll, self, KeyCode}};
 //use crossterm::
 use tokio;
-use tui::{backend::CrosstermBackend, Terminal, layout::{Layout, Direction, Constraint}, widgets::{Block, Borders, BorderType, ListItem, List, ListState}, style::{Style, Modifier}};
-use players::{Players, Position};
+use tui::{backend::CrosstermBackend, Terminal, layout::{Layout, Direction, Constraint}, widgets::{Block, Borders, BorderType, ListItem, List, ListState, Paragraph}, style::{Style, Modifier}};
+use players::{Players, Position, Player};
 
 mod players;
 
@@ -21,7 +21,14 @@ async fn run_tui() -> Result<(), Box<dyn Error>> {
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
-    let mut state = AppState::new(get_players_by_team("DAL".to_owned()).await.unwrap());
+    let players = get_players_by_team("DAL".to_owned())
+        .await
+        .unwrap()
+        .into_iter()
+        .filter(|p| matches!(p.status, players::Status::Active))
+        .collect();
+
+    let mut state = AppState::new(players);
 
     draw_and_control_ui(&mut terminal, &mut state).unwrap();
 
@@ -53,6 +60,12 @@ fn draw_and_control_ui(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, st
                     KeyCode::Down => {
                         state.move_down();
                     }
+                    KeyCode::Enter => {
+                        state.select_player();
+                    }
+                    KeyCode::Esc => {
+                        state.deselect_player();
+                    }
                     _ => {}
                 }
             }
@@ -77,7 +90,39 @@ fn draw_ui(frame: &mut tui::Frame<CrosstermBackend<io::Stdout>>, state: &mut App
         .border_type(BorderType::Thick);
     frame.render_widget(player_list_block, parent_chunk[0]);
     player_list_render(frame, state, parent_chunk[0]);
-        
+
+    if let Some(selected_player) = &state.active_player {
+        let player_details_block = Block::default()
+            .title(format!("{} {}", selected_player.first_name, selected_player.last_name))
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded);
+        frame.render_widget(player_details_block, parent_chunk[1]);
+        player_details_render(frame, selected_player, parent_chunk[1]);
+    }
+}
+
+fn player_details_render(frame: &mut tui::Frame<CrosstermBackend<io::Stdout>>, selected_player: &Player, area: tui::layout::Rect) {
+    let details_chunk = Layout::default()
+        .margin(2)
+        .direction(Direction::Vertical)
+        .constraints(
+            [
+                Constraint::Length(3),
+                Constraint::Length(3),
+                Constraint::Length(3),
+                Constraint::Length(3),
+                Constraint::Length(3),
+            ]
+        )
+        .split(area);
+
+    let jersey = Paragraph::new(selected_player.jersey.unwrap().to_string())
+        .block(Block::default().title("Jersey").borders(Borders::ALL).border_type(BorderType::Rounded));
+    frame.render_widget(jersey, details_chunk[0]);
+
+    let birth = Paragraph::new(format!("{} - {}", selected_player.birth_date, selected_player.birth_city))
+        .block(Block::default().title("Birth").borders(Borders::ALL).border_type(BorderType::Rounded));
+    frame.render_widget(birth, details_chunk[1]);
 }
 
 fn player_list_render(frame: &mut tui::Frame<CrosstermBackend<io::Stdout>>, state: &mut AppState, area: tui::layout::Rect) {
@@ -89,11 +134,16 @@ fn player_list_render(frame: &mut tui::Frame<CrosstermBackend<io::Stdout>>, stat
         })
         .collect();
 
+    let list_chucks = Layout::default()
+        .margin(2)
+        .constraints([Constraint::Percentage(100)].as_ref())
+        .split(area);
+
     let list = List::new(list_items)
         .block(Block::default())
         .highlight_symbol("->")
         .highlight_style(Style::default().add_modifier(Modifier::RAPID_BLINK));
-    frame.render_stateful_widget(list, area, &mut state.list_state)
+    frame.render_stateful_widget(list, list_chucks[0], &mut state.list_state)
 }
 
 async fn get_players_by_team(team_key: String) -> Result<Players, reqwest::Error> {
@@ -108,7 +158,7 @@ async fn get_players_by_team(team_key: String) -> Result<Players, reqwest::Error
 
 struct AppState {
     players: Players,
-    active_player_id: Option<usize>,
+    active_player: Option<Player>,
     list_state: ListState
 
 }
@@ -116,7 +166,7 @@ impl AppState {
     fn new(players: Players) -> Self {
         Self {
             players,
-            active_player_id: None,
+            active_player: None,
             list_state: ListState::default(),
         }
     }
@@ -151,5 +201,13 @@ impl AppState {
             }
         };
         self.list_state.select(selected);
+    }
+
+    fn select_player(&mut self) {
+        self.active_player = Some(self.players[self.list_state.selected().unwrap()].clone());
+    }
+
+    fn deselect_player(&mut self) {
+        self.active_player = None;
     }
 }
