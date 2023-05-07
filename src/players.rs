@@ -17,10 +17,10 @@ use serde::{Serialize, Deserialize};
 
 pub type Players = Vec<Player>;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Player {
     #[serde(rename = "PlayerID")]
-    player_id: i64,
+    pub player_id: i64,
 
     #[serde(rename = "FirstName")]
     pub first_name: String,
@@ -149,7 +149,7 @@ pub struct Player {
     usa_today_headshot_no_background_updated: Option<String>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub enum Catches {
     #[serde(rename = "-")]
     Empty,
@@ -161,7 +161,7 @@ pub enum Catches {
     Right,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub enum Position {
     #[serde(rename = "C")]
     Center,
@@ -191,13 +191,13 @@ impl fmt::Display for Position {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub enum Injury {
     #[serde(rename = "Scrambled")]
     Scrambled,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub enum Status {
     #[serde(rename = "Active")]
     Active,
@@ -206,7 +206,7 @@ pub enum Status {
     Minors,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub enum Team {
     #[serde(rename = "DAL")]
     Dal,
